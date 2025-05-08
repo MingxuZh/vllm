@@ -60,8 +60,9 @@ async def async_request_tgi(
     async with aiohttp.ClientSession(trust_env=True,
                                      timeout=AIOHTTP_TIMEOUT) as session:
         params = {
+            "best_of": request_func_input.best_of,
             "max_new_tokens": request_func_input.output_len,
-            "do_sample": True,
+            "do_sample": False,
             "temperature": 0.01,  # TGI does not accept 0.0 temperature.
             "top_p": 0.99,  # TGI does not accept 1.0 top_p.
             "truncate": request_func_input.prompt_len,
