@@ -14,7 +14,7 @@ import huggingface_hub.constants
 from tqdm.asyncio import tqdm
 from transformers import (AutoTokenizer, PreTrainedTokenizer,
                           PreTrainedTokenizerFast)
-
+import base64
 # NOTE(simon): do not import vLLM here so the benchmark script
 # can run without vLLM installed.
 
@@ -55,7 +55,7 @@ async def async_request_tgi(
     pbar: Optional[tqdm] = None,
 ) -> RequestFuncOutput:
     api_url = request_func_input.api_url
-    assert api_url.endswith("generate_stream")
+    #assert api_url.endswith("generate_stream")
 
     async with aiohttp.ClientSession(trust_env=True,
                                      timeout=AIOHTTP_TIMEOUT) as session:
@@ -68,6 +68,17 @@ async def async_request_tgi(
             "truncate": request_func_input.prompt_len,
             "ignore_eos_token": request_func_input.ignore_eos,
         }
+        if request_func_input.multi_modal_content is not None :
+            image_path = str(request_func_input.multi_modal_content["image_url"]["url"])
+            image_path = image_path.split("file://")[1]
+            print(f"""image_path: {image_path}""")
+            
+            with open(image_path, "rb") as f:
+                image = base64.b64encode(f.read()).decode("utf-8")
+
+            image = f"data:image/jpeg;base64,{image}"
+            prompt = request_func_input.prompt
+            request_func_input.prompt = f"![]({image}){prompt}\n\n"
         payload = {
             "inputs": request_func_input.prompt,
             "parameters": params,
@@ -98,6 +109,7 @@ async def async_request_tgi(
                         chunk = chunk_bytes.removeprefix("data:")
 
                         data = json.loads(chunk)
+                        output.generated_text += data["token"]["text"]
                         timestamp = time.perf_counter()
                         # First token
                         if ttft == 0.0:
