@@ -707,7 +707,7 @@ class VisionArenaDataset(HuggingFaceDataset):
         tokenizer: PreTrainedTokenizerBase,
         num_requests: int,
         output_len: Optional[int] = None,
-        enable_multimodal_chat: bool = False,
+        enable_multimodal_chat: bool = True,
         **kwargs,
     ) -> list:
         output_len = (output_len
